@@ -58,7 +58,7 @@ class TodoCollection(restful.Resource):
         todo = Todo(**args)
         key = todo.put()
         todo = key.get()
-        return todo.to_dict()
+        return todo
 
 
 class TodoResource(restful.Resource):
@@ -67,7 +67,23 @@ class TodoResource(restful.Resource):
     def get(self, todo_key_string):
         key = ndb.Key(urlsafe=todo_key_string)
         todo = key.get()
+        if not todo:
+            restful.abort(404)
         return todo
+
+    @marshal_with(todo_fields)
+    def put(self, todo_key_string):
+        key = ndb.Key(urlsafe=todo_key_string)
+        args = todo_parser.parse_args()
+        if not key.get():
+            restful.abort(404)
+        todo = Todo(key=key, **args)
+        todo.put()
+        return todo
+
+    def delete(self, todo_key_string):
+        key = ndb.Key(urlsafe=todo_key_string)
+        key.delete()
 
 api.add_resource(TodoCollection, '/todos')
 api.add_resource(TodoResource, '/todos/<string:todo_key_string>')
